@@ -9,44 +9,73 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 with open("embeddings.json", "r", encoding="utf-8") as f:
     embedded_data = json.load(f)
 
+print(f"Loaded {len(embedded_data)} embedded chunks")
+
 def cosine_similarity(vec1, vec2):
     vec1 = np.array(vec1)
     vec2 = np.array(vec2)
-    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+    dot_product = np.dot(vec1, vec2)
+    norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
+    return dot_product / norm_product if norm_product > 0 else 0.0
 
-def search(query, top_k=3):
-    query_vec = model.encode(query).tolist()
+def search_chunks(query, top_k=5, min_score=0.3):
+    """
+    Search for most relevant chunks (not documents)
+    Returns top_k chunks with scores above min_score
+    """
+    query_vec = model.encode(query, show_progress_bar=False).tolist()
     
-    scores = []
+    results = []
     for doc in embedded_data:
         score = cosine_similarity(query_vec, doc["embedding"])
-        scores.append((doc["title"], score, doc["content"]))
+        if score >= min_score:  # Filter low-quality matches
+            results.append({
+                "title": doc["title"],
+                "chunk_index": doc["chunk_index"],
+                "score": score,
+                "content": doc["content"]
+            })
     
-    # Remove duplicates (keep highest score per document)
-    results_dict = {}
-    for title, score, content in scores:
-        if title not in results_dict or score > results_dict[title][0]:
-            results_dict[title] = (score, content)
+    # Sort by score
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:top_k]
+
+def format_context(results):
+    """
+    Format retrieved chunks into context for LLM
+    """
+    context_parts = []
+    for i, result in enumerate(results, 1):
+        context_parts.append(
+            f"[Source {i}: {result['title']} (chunk {result['chunk_index']}, relevance: {result['score']:.3f})]\n"
+            f"{result['content']}\n"
+        )
+    return "\n".join(context_parts)
+
+# --- Test Queries ---
+if __name__ == "__main__":
+    test_queries = [
+        "What is salat in Islam?",
+        "Tell me about fasting",
+        "What are the pillars of Islam?"
+    ]
     
-    unique_results = [(title, score, content) for title, (score, content) in results_dict.items()]
-    unique_results.sort(key=lambda x: x[1], reverse=True)
-    
-    return unique_results[:top_k]
-
-# --- Multiple keyword query ---
-queries = ["salat", "swam"]
-combined_results = {}
-
-for q in queries:
-    results = search(f"What is {q} in Islam?", top_k=3)
-    for title, score, content in results:
-        if title not in combined_results or score > combined_results[title][0]:
-            combined_results[title] = (score, content)
-
-# Sort final combined results
-final_results = sorted([(t, s, c) for t, (s, c) in combined_results.items()], key=lambda x: x[1], reverse=True)
-
-# Print results
-for title, score, content in final_results:
-    print(f"Title: {title}, Score: {score:.4f}")
-    print(f"Content: {content[:300]}...\n")
+    for query in test_queries:
+        print(f"\n{'='*80}")
+        print(f"Query: {query}")
+        print(f"{'='*80}")
+        
+        results = search_chunks(query, top_k=3, min_score=0.2)
+        
+        if not results:
+            print("No relevant results found.")
+        else:
+            for i, result in enumerate(results, 1):
+                print(f"\n[Result {i}] {result['title']} (chunk {result['chunk_index']})")
+                print(f"Score: {result['score']:.4f}")
+                print(f"Content: {result['content'][:200]}...")
+                print("-" * 80)
+            
+            # Print formatted context for RAG
+            print("\n--- FORMATTED CONTEXT FOR LLM ---")
+            print(format_context(results))
