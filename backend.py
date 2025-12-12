@@ -138,13 +138,6 @@ def ask_question(query, top_k=5, verbose=True):
         }
 
 def interactive_chat():
-    """Interactive Q&A session"""
-    print("\n" + "="*80)
-    print("🤖 Islamic Knowledge RAG System")
-    print("   Using: FAISS + Gemini AI")
-    print("="*80)
-    print("\nType your questions (or 'quit' to exit)")
-    print("-" * 80)
     
     while True:
         query = input("\n📝 Your question: ").strip()
