@@ -1,8 +1,3 @@
-"""
-Create embeddings and store in FAISS (Easier to install than ChromaDB)
-This replaces embeddings.py
-"""
-
 import os
 import json
 import pickle
@@ -169,12 +164,3 @@ def get_stats():
 if __name__ == "__main__":
     # Create embeddings from data folder
     create_embeddings(folder="data")
-    
-    # Show stats
-    print("\n")
-    get_stats()
-    
-    print("\n💡 Next Steps:")
-    print("   1. Use backend_faiss.py to query the database")
-    print("   2. Much faster than JSON!")
-    print("   3. Add new documents anytime with add_new_document()")
