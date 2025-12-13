@@ -92,9 +92,6 @@ def create_embeddings(folder="data"):
     print("✅ Vector Database Created Successfully!")
     print(f"  📊 Total chunks: {len(all_chunks)}")
     print(f"  📄 Documents: {len(docs)}")
-    print(f"  💾 Index file: faiss_index.bin")
-    print(f"  💾 Metadata: faiss_metadata.pkl")
-    print("="*60)
     
     return index, all_metadata
 
@@ -162,5 +159,4 @@ def get_stats():
         print("   Database doesn't exist. Run create_embeddings() first.")
 
 if __name__ == "__main__":
-    # Create embeddings from data folder
     create_embeddings(folder="data")

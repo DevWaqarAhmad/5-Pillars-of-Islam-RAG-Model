@@ -1,3 +1,5 @@
 .env
 pillarsofislam.pdf
 data
+fiass_index.bin
+faiss_metadata.pkl
